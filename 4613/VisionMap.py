@@ -33,7 +33,7 @@ perimeterMax = 1000
 imageNum = 3
 imagePath = "sample" + str(imageNum) + ".jpg"
 
-roboRIOIP = "roborio-5401-frc.local"
+roboRIOIP = "roborio-4613-frc.local"
 whRatioMax = 2.3
 whRatioMin = 1.45
 perimeterRatio = float(4.0/5.5)

@@ -5,7 +5,7 @@ import logging
 from threading import Thread
 
 try:  # things that could error go here
-    import VisionConstants
+    import VisionMap
     import cv2
     import numpy
     from networktables import NetworkTable
@@ -20,14 +20,14 @@ class PiVideoStream:
     def __init__(self):
         # initialize camera and stream
         self.camera = PiCamera()
-        self.camera.resolution = VisionConstants.resolution
-        self.camera.framerate = VisionConstants.framerate
-        self.camera.shutter_speed = VisionConstants.exposure
-        self.camera.brightness = VisionConstants.brightness
-        self.camera.sharpness = VisionConstants.sharpness
-        self.camera.saturation = VisionConstants.saturation
-        self.camera.rotation = VisionConstants.rotation
-        self.rawCapture = PiRGBArray(self.camera, size=VisionConstants.resolution)
+        self.camera.resolution = VisionMap.resolution
+        self.camera.framerate = VisionMap.framerate
+        self.camera.shutter_speed = VisionMap.exposure
+        self.camera.brightness = VisionMap.brightness
+        self.camera.sharpness = VisionMap.sharpness
+        self.camera.saturation = VisionMap.saturation
+        self.camera.rotation = VisionMap.rotation
+        self.rawCapture = PiRGBArray(self.camera, size=VisionMap.resolution)
         self.stream = self.camera.capture_continuous(self.rawCapture, format="bgr", use_video_port=True)
         time.sleep(2)
 
@@ -69,9 +69,9 @@ def processImage(origImage):
     outImage = cv2.cvtColor(origImage, cv2.COLOR_BGR2HSV)
     outImage = cv2.medianBlur(outImage, 3)
     # cv2.imshow("blur", outImage)
-    outImage = cv2.inRange(outImage, VisionConstants.hsvLower, VisionConstants.hsvUpper)
+    outImage = cv2.inRange(outImage, VisionMap.hsvLower, VisionMap.hsvUpper)
     # cv2.imshow("HSV", outImage)
-    outImage = cv2.Canny(outImage, VisionConstants.cannyThreshMin, VisionConstants.cannyThreshMax)
+    outImage = cv2.Canny(outImage, VisionMap.cannyThreshMin, VisionMap.cannyThreshMax)
     # cv2.imshow("Canny", outImage)
     (outImage, contours, _) = cv2.findContours(outImage, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     outImage = cv2.drawContours(origImage, contours, -1, (255, 255, 0), 1)
@@ -85,11 +85,11 @@ def processImage(origImage):
 
         '''area'''
         area = cv2.contourArea(contour)
-        if area > VisionConstants.areaMin and area < VisionConstants.areaMax:
+        if area > VisionMap.areaMin and area < VisionMap.areaMax:
 
             '''perimeter'''
             perimeter = cv2.arcLength(contour, True)
-            if perimeter > VisionConstants.perimeterMin and perimeter < VisionConstants.perimeterMax:
+            if perimeter > VisionMap.perimeterMin and perimeter < VisionMap.perimeterMax:
 
                 '''edge number'''
                 approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
@@ -109,16 +109,16 @@ def processImage(origImage):
                     else:
                         w = oldW
                         h = oldH
-                    if h < VisionConstants.maxHeight and w < VisionConstants.maxWidth and h > VisionConstants.minHeight and w > VisionConstants.minWidth:
+                    if h < VisionMap.maxHeight and w < VisionMap.maxWidth and h > VisionMap.minHeight and w > VisionMap.minWidth:
 
                         '''width/heigh ratio'''
-                        if float(w) / float(h) < VisionConstants.whRatioMax and float(w) / float(h) > VisionConstants.whRatioMin:
+                        if float(w) / float(h) < VisionMap.whRatioMax and float(w) / float(h) > VisionMap.whRatioMin:
                             # print(str(2*w + 2*h), "PERIMETER:", str(perimeter/(2*w + 2*h)))
 
                             '''perimeter ratio'''
                             # print("yay 2")
-                            if perimeter / (2 * w + 2 * h) < VisionConstants.perimeterRatioMax and perimeter / (
-                                    2 * w + 2 * h) > VisionConstants.perimeterRatioMin:
+                            if perimeter / (2 * w + 2 * h) < VisionMap.perimeterRatioMax and perimeter / (
+                                    2 * w + 2 * h) > VisionMap.perimeterRatioMin:
                                 # box = cv2.boxPoints((x, y), (w, h), r)
                                 # box = np.int0(box)
                                 # rectangle = cv2.drawContours(outImage, [box], 0, (255, 0, 255), 2)
@@ -159,7 +159,7 @@ def HSVthresholdSlider():
         hsvLower = numpy.array([hLow, sLow, vLow])
         hsvUpper = numpy.array([hHigh, sHigh, vHigh])
         cv2.imshow("original", image)
-        image = cv2.GaussianBlur(image, VisionConstants.blur, 0)
+        image = cv2.GaussianBlur(image, VisionMap.blur, 0)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         image = cv2.inRange(image, hsvLower, hsvUpper)
         cv2.imshow("hsv", image)
@@ -171,7 +171,7 @@ def main():
     lastTime = 0
 
     # create NetworkTable
-    table = makeNetworkTable(VisionConstants.roboRIOIP)
+    table = makeNetworkTable(VisionMap.roboRIOIP)
     table.putNumber("centerX", -1)
     table.putNumber("centerY", -1)
     table.putNumber("width", -1)
@@ -189,8 +189,8 @@ def main():
         _, contours = processImage(image)
         try:
             table.putBoolean("Found", True)
-            table.putNumber("centerX", (contours[0][0] - VisionConstants.centerY))  # use y because camera rotated
-            table.putNumber("centerY", (contours[0][1] - VisionConstants.centerX))  # use x because rotated
+            table.putNumber("centerX", (contours[0][0] - VisionMap.centerY))  # use y because camera rotated
+            table.putNumber("centerY", (contours[0][1] - VisionMap.centerX))  # use x because rotated
             table.putNumber("width", contours[0][3])  # use height, because it's rotated sideways
             print("Pushed to NetworkTables")
         except IndexError:
