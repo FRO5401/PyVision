@@ -1,5 +1,3 @@
-# Import opencv
-import cv2
 # Import VisionConfig
 import VisionConfig
 # Import GRIP pipeline
@@ -22,17 +20,6 @@ cam = cscore.UsbCamera("picam", 0)
 # the resolution is 320x240 at 30 FPS
 cam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.resolution[0],
                  VisionConfig.resolution[1], VisionConfig.framerate)
-
-# set exposure mode to manual (0-auto 1-manual)
-cam.getProperty("auto_exposure").set(VisionConfig.exposureMode)
-# set the exposure value to 0 (0-255)
-cam.getProperty("exposure").set(VisionConfig.exposure)
-# Set the White balance to manual mode (0-manual 1-auto)
-cam.getProperty("white_balance_automatic").set(0)
-# set the white balance to a preset for indoor
-# I don't think this camera supports this
-# set the gain mode to manual (0-manual 1-auto)
-cam.getProperty("gain_automatic").set(0)
 
 # create a cv sink, which will grab images from the camera
 cvsink = cscore.CvSink("cvsink")
@@ -57,10 +44,10 @@ while True:
 
     # grab the frame from the sink, call it img
     # this resets img, so it is not drawn on anymore
-    img = cvsink.grabFrame(img)
+    time, img = cvsink.grabFrame(img)
 
     # If there's an error or no frame, lets skip this loop fam
-    if img == 0:
+    if time == 0:
         # skip the rest of this iteration (no point in processing an image that doesnt exist)
         continue
 
