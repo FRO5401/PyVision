@@ -10,4 +10,5 @@ exposure = 150
 
 framerate = 30
 
-roboRIOIP = "10.54.01.2"
+#roboRIOIP = "10.54.01.2"
+roboRIOIP = "10.2.1.12"

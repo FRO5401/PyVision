@@ -1,23 +1,18 @@
-# Import VisionConfig
 import VisionConfig
-# Import GRIP pipeline
 from grip import GripPipeline
-# Import numpy, mainly for arrays
 import numpy as np
-# import cscore
 import cscore
-# import netowrktables
 from networktables import NetworkTables
-# import logging for network tables messages
 import logging
+import threading
 
-# set this thing
+# set logging level
 logging.basicConfig(level=logging.DEBUG)
 
-# create the usb cam
+# create the Pi Cam
 cam = cscore.UsbCamera("picam", 0)
 
-# the resolution is 320x240 at 30 FPS
+# the resolution is set in VisionConfig
 cam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.resolution[0],
                  VisionConfig.resolution[1], VisionConfig.framerate)
 
@@ -31,22 +26,38 @@ pipeline = GripPipeline()
 # preallocate memory for images so that we dont allocate it every loop
 img = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 
-
 # set up mjpeg server, the ip for this is 0.0.0.0:8081
+# Comment this out before competition, or change port to allowed port number
 mjpegServer = cscore.MjpegServer("httpserver", 8081)
 mjpegServer.setSource(cam)
 
-# initialize the netowrktable
-NetworkTables.initialize(server=VisionConfig.roboRIOIP)
+# initialize the netowrktable and wait for connection
+cond = threading.Condition()
+notified = [False]
 
+
+def connectionListener(connected, info):
+    print(info, '; Connected=%s' % connected)
+    with cond:
+        notified[0] = True
+        cond.notify()
+
+
+NetworkTables.initialize(server=VisionConfig.roboRIOIP)
+NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)
+
+with cond:
+    print("Waiting")
+    if not notified[0]:
+        cond.wait()
+print("Connected!")
 # loop forever
 while True:
 
     # grab the frame from the sink, call it img
-    # this resets img, so it is not drawn on anymore
     time, img = cvsink.grabFrame(img)
 
-    # If there's an error or no frame, lets skip this loop fam
+    # If there's an error or no frame, lets skip this loop iteration
     if time == 0:
         # skip the rest of this iteration (no point in processing an image that doesnt exist)
         continue
