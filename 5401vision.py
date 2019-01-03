@@ -52,6 +52,7 @@ with cond:
         cond.wait()
 print("Connected!")
 # loop forever
+table = NetworkTables.getTable('VisionData')
 while True:
 
     # grab the frame from the sink, call it img
@@ -64,3 +65,8 @@ while True:
 
     # Process image through pipeline
     pipeline.process(img)
+
+    for blob in pipeline.find_blobs_output:
+        x, y = blob.pt
+        print("Blob Found. Data: (" + str(x) + ", " + str(y) + ")")
+        table.putNumberArray("coord", blob.pt)
