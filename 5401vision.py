@@ -10,15 +10,19 @@ import threading
 logging.basicConfig(level=logging.DEBUG)
 
 # create the Pi Cam
-cam = cscore.UsbCamera("picam", 0)
+picam = cscore.UsbCamera("picam", 0)
+usbcam = cscore.UsbCamera("usbcam", 1)
+
 
 # the resolution is set in VisionConfig
-cam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.resolution[0],
-                 VisionConfig.resolution[1], VisionConfig.framerate)
+picam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.pi_resolution[0],
+                   VisionConfig.pi_resolution[1], VisionConfig.pi_framerate)
+usbcam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.usb_resolution[0],
+                   VisionConfig.usb_resolution[1], VisionConfig.usb_framerate)
 
 # create a cv sink, which will grab images from the camera
 cvsink = cscore.CvSink("cvsink")
-cvsink.setSource(cam)
+cvsink.setSource(picam)
 
 # create Pipeline Object
 pipeline = GripPipeline()
@@ -26,10 +30,12 @@ pipeline = GripPipeline()
 # preallocate memory for images so that we dont allocate it every loop
 img = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 
-# set up mjpeg server, the ip for this is 0.0.0.0:8081
+# set up mjpeg server, the ip for this is 0.0.0.0:1180 and 0.0.0.0:1181
 # Comment this out before competition, or change port to allowed port number
-mjpegServer = cscore.MjpegServer("httpserver", 8081)
-mjpegServer.setSource(cam)
+mjpegServer1 = cscore.MjpegServer("httpserver", 1180)
+mjpegServer1.setSource(picam)
+mjpegServer2 = cscore.MjpegServer("httpserver", 1181)
+mjpegServer2.setSource(usbcam)
 
 # initialize the netowrktable and wait for connection
 cond = threading.Condition()
