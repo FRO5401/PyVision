@@ -72,7 +72,6 @@ while True:
     # Process image through pipeline
     pipeline.process(img)
 
-    for blob in pipeline.find_blobs_output:
-        x, y = blob.pt
-        print("Blob Found. Data: (" + str(x) + ", " + str(y) + ")")
-        table.putNumberArray("coord", blob.pt)
+    pipeline.find_contours_output[1]
+
+    #for contour in pipeline.find_contours_output:
