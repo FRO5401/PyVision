@@ -82,7 +82,7 @@ while True:
         blobcenter = diffx / 2 + blobs[0][0]
         distance = (img.shape[1] / 2) - blobcenter
         table.putnumber("distance", distance)
-    if diffx < 200 and diffx >= 190:
+    if 200 > diffx >= 190:
         try:
             diffx = blobs[2][0] - blobs[1][0]
         except IndexError:

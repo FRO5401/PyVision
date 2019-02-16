@@ -52,7 +52,7 @@ while True:
         #table.putnumber("distance", distance)
         print("Distance: " + str(distance))
         print("Diffx: " + str(diffx))
-    if diffx < 200 and diffx >= 190:
+    if 200 > diffx >= 190:
         try:
             diffx = blobs[2][0] - blobs[1][0]
         except IndexError:
