@@ -72,6 +72,25 @@ while True:
     # Process image through pipeline
     pipeline.process(img)
 
-    pipeline.find_contours_output[1]
+    blobs = []
+    for x in range(0, pipeline.find_blobs_output.__len__()):
+        blobs.append(pipeline.find_blobs_output[x].pt)
+    blobs.sort()
 
-    #for contour in pipeline.find_contours_output:
+    diffx = blobs[1][0] - blobs[0][0]
+    if diffx >= 200:
+        blobcenter = diffx / 2 + blobs[0][0]
+        distance = (img.shape[1] / 2) - blobcenter
+        table.putnumber("distance", distance)
+    if diffx < 200 and diffx >= 190:
+        try:
+            diffx = blobs[2][0] - blobs[1][0]
+        except IndexError:
+            continue
+        if diffx < 200:
+            continue
+        blobcenter = diffx / 2 + blobs[0][0]
+        distance = (img.shape[1] / 2) - blobcenter
+        table.putnumber("distance", distance)
+    else:
+        continue

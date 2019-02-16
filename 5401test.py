@@ -34,7 +34,7 @@ table = NetworkTables.getTable('VisionData')
 while True:
 
     # grab the frame from the sink, call it img
-    img = cv2.imread("field-tape-green.png")
+    img = cv2.imread("field-tape-green-crop2.png")
 
 
     # Process image through pipeline
@@ -44,9 +44,27 @@ while True:
     for x in range(0, pipeline.find_blobs_output.__len__()):
         blobs.append(pipeline.find_blobs_output[x].pt)
     blobs.sort()
-    diffx = ((blobs[1][0] - blobs[0][0]) / 2) + blobs[0][0]
 
-    if diffx != (img.shape[1] / 2):
-        distance = (img.shape[1] / 2) - diffx
-
-    table.putnumber("distance", distance)
+    diffx = blobs[1][0] - blobs[0][0]
+    if diffx >= 200:
+        blobcenter = diffx / 2 + blobs[0][0]
+        distance = (img.shape[1] / 2) - blobcenter
+        #table.putnumber("distance", distance)
+        print("Distance: " + str(distance))
+        print("Diffx: " + str(diffx))
+    if diffx < 200 and diffx >= 190:
+        try:
+            diffx = blobs[2][0] - blobs[1][0]
+        except IndexError:
+            print("Failed Test")
+            continue
+        if diffx < 200:
+            print("Failed Test")
+            continue
+        blobcenter = diffx / 2 + blobs[0][0]
+        distance = (img.shape[1] / 2) - blobcenter
+        # table.putnumber("distance", distance)
+        print("ALT Distance:" + str(distance))
+        print("ALT Diffx: " + str(diffx))
+    else:
+        continue
