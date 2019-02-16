@@ -7,14 +7,15 @@ import logging
 import threading
 
 # set logging level
+# this is needed to get NetworkTables information
 logging.basicConfig(level=logging.DEBUG)
 
-# create the Pi Cam
+# create the camera objects
 picam = cscore.UsbCamera("picam", 0)
 usbcam = cscore.UsbCamera("usbcam", 1)
 
 
-# the resolution is set in VisionConfig
+# set video modes as determined in VisionConfig.py
 picam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.pi_resolution[0],
                    VisionConfig.pi_resolution[1], VisionConfig.pi_framerate)
 usbcam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.usb_resolution[0],
@@ -72,17 +73,26 @@ while True:
     # Process image through pipeline
     pipeline.process(img)
 
+    # Get all center coordinates for blobs and put them in a list
     blobs = []
     for x in range(0, pipeline.find_blobs_output.__len__()):
         blobs.append(pipeline.find_blobs_output[x].pt)
     blobs.sort()
 
+    # get the difference in X values for the 2 first leftmost blobs
     diffx = blobs[1][0] - blobs[0][0]
+    # make sure the difference between the blobs is correct for field use
     if diffx >= 200:
+        # find the center between the two blobs
         blobcenter = diffx / 2 + blobs[0][0]
+        # find the distance from the center of the image
         distance = (img.shape[1] / 2) - blobcenter
+        # put that distance in the NetworkTable
         table.putnumber("distance", distance)
+    # if the difference isn't correct do this
     if 200 > diffx >= 190:
+        # try to use the next 2 coordinates
+        # if blobs don't exist cleanly continue
         try:
             diffx = blobs[2][0] - blobs[1][0]
         except IndexError:
@@ -93,4 +103,5 @@ while True:
         distance = (img.shape[1] / 2) - blobcenter
         table.putnumber("distance", distance)
     else:
+        # if no blobs found, keep running
         continue
