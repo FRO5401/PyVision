@@ -12,15 +12,15 @@ logging.basicConfig(level=logging.DEBUG)
 # create Pipeline Object
 pipeline = GripPipeline()
 
-# preallocate memory for images so that we dont allocate it every loop
+# preallocate memory for images so that we don't allocate it every loop
 img = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 
-# initialize the netowrktable and wait for connection
+# initialize the networktable and wait for connection
 cond = threading.Condition()
 notified = [False]
 
 
-def connectionListener(connected, info):
+def connectionlistener(connected, info):
     print(info, '; Connected=%s' % connected)
     with cond:
         notified[0] = True
@@ -28,14 +28,13 @@ def connectionListener(connected, info):
 
 
 NetworkTables.initialize(server=VisionConfig.roboRIOIP)
-NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)
+NetworkTables.addConnectionListener(connectionlistener, immediateNotify=True)
 
 table = NetworkTables.getTable('VisionData')
 while True:
 
     # grab the frame from the sink, call it img
     img = cv2.imread("field-tape-green-crop2.png")
-
 
     # Process image through pipeline
     pipeline.process(img)
@@ -49,17 +48,17 @@ while True:
     if diffx >= 200:
         blobcenter = diffx / 2 + blobs[0][0]
         distance = (img.shape[1] / 2) - blobcenter
-        #table.putnumber("distance", distance)
+        # table.putnumber("distance", distance)
         print("Distance: " + str(distance))
         print("Diffx: " + str(diffx))
     if 200 > diffx >= 190:
         try:
             diffx = blobs[2][0] - blobs[1][0]
         except IndexError:
-            print("Failed Test")
+            print("Failed Test. Only 2 blobs exist in image.")
             continue
         if diffx < 200:
-            print("Failed Test")
+            print("Failed Test. Difference between targets is invalid.")
             continue
         blobcenter = diffx / 2 + blobs[0][0]
         distance = (img.shape[1] / 2) - blobcenter
