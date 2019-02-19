@@ -79,27 +79,29 @@ while True:
         blobs.append(pipeline.find_blobs_output[x].pt)
     blobs.sort()
 
-    # get the difference in X values for the 2 first leftmost blobs
-    diffx = blobs[1][0] - blobs[0][0]
+    # get the difference in X values for the 2 first leftmost blobs if they exist
+    try:
+        diffx1 = blobs[1][0] - blobs[0][0]
+    except IndexError:
+        diffx1 = False
+        continue
+    # get the difference in X values for the 2nd and 3rd blobs if they exist
+    try:
+        diffx2 = blobs[2][0] = blobs[1][0]
+    except IndexError:
+        diffx2 = False
+        pass
     # make sure the difference between the blobs is correct for field use
-    if diffx >= 200:
+    if diffx1 > diffx2:
         # find the center between the two blobs
-        blobcenter = diffx / 2 + blobs[0][0]
+        blobcenter = diffx1 / 2 + blobs[0][0]
         # find the distance from the center of the image
         distance = (img.shape[1] / 2) - blobcenter
         # put that distance in the NetworkTable
         table.putnumber("distance", distance)
     # if the difference isn't correct do this
-    if 200 > diffx >= 190:
-        # try to use the next 2 coordinates
-        # if blobs don't exist cleanly continue
-        try:
-            diffx = blobs[2][0] - blobs[1][0]
-        except IndexError:
-            continue
-        if diffx < 200:
-            continue
-        blobcenter = diffx / 2 + blobs[0][0]
+    if diffx2 > diffx1:
+        blobcenter = diffx2 / 2 + blobs[0][0]
         distance = (img.shape[1] / 2) - blobcenter
         table.putnumber("distance", distance)
     else:
