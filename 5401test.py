@@ -1,6 +1,5 @@
 import VisionConfig
 from grip import GripPipeline
-import numpy as np
 from networktables import NetworkTables
 import logging
 import threading
@@ -12,9 +11,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 # create Pipeline Object
 pipeline = GripPipeline()
-
-# preallocate memory for images so that we don't allocate it every loop
-img = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 
 # initialize the networktable and wait for connection
 cond = threading.Condition()
@@ -35,7 +31,7 @@ table = NetworkTables.getTable('VisionData')
 while True:
 
     # get image data from the file
-    img = cv2.imread("field-tape-green-crop.png")
+    img = cv2.imread("field-tape-green.png")
 
     # Process image through pipeline
     pipeline.process(img)
@@ -46,34 +42,38 @@ while True:
         blobs.append(pipeline.find_blobs_output[x].pt)
     blobs.sort()
 
-    # get the difference in X values for the 2 first leftmost blobs
-    diffx = blobs[1][0] - blobs[0][0]
-    # make sure the difference between the blobs is correct for field use
-    if diffx >= 200:
+    # get the difference in X values for the 2 first leftmost blobs if they exist
+    try:
+        diffx1 = blobs[1][0] - blobs[0][0]
+    except IndexError:
+        # if they dont exist, skip loop iteration
+        print("ERROR: Either only 1 blob exists or no blobs found.")
+        continue
+    # get the difference in X values for the 2nd and 3rd blobs if they exist
+    try:
+        diffx2 = blobs[2][0] - blobs[1][0]
+    except IndexError:
+        # if the 3rd blob doesnt exist then continue anyways
+        print("WARN: 3rd blob does not exist.")
+        diffx2 = False
+        pass
+    # make sure we drive between targets with a bigger difference
+    if diffx1 > diffx2:
         # find the center between the two blobs
-        blobcenter = diffx / 2 + blobs[0][0]
+        blobcenter = diffx1 / 2 + blobs[0][0]
         # find the distance from the center of the image
         distance = (img.shape[1] / 2) - blobcenter
         # table.putnumber("distance", distance)
         # print the data
-        print("Distance: " + str(distance))
-        print("Diffx: " + str(diffx))
+        print("INFO: Distance: " + str(distance))
+        print("INFO: Diffx: " + str(diffx1))
     # if the difference isn't correct do this
-    if 200 > diffx >= 190:
-        # try to use the next 2 coordinates
-        # if blobs don't exist cleanly fail
-        try:
-            diffx = blobs[2][0] - blobs[1][0]
-        except IndexError:
-            print("Failed Test. Only 2 blobs exist in image.")
-            continue
-        if diffx < 200:
-            print("Failed Test. Difference between targets is invalid.")
-            continue
-        blobcenter = diffx / 2 + blobs[0][0]
+    if diffx2 > diffx1:
+        print("INFO: Distance between first 2 blobs invalid. Trying next two.")
+        blobcenter = diffx2 / 2 + blobs[0][0]
         distance = (img.shape[1] / 2) - blobcenter
         # table.putnumber("distance", distance)
-        print("ALT Distance:" + str(distance))
-        print("ALT Diffx: " + str(diffx))
+        print("INFO: ALT Distance:" + str(distance))
+        print("INFO: ALT Diffx: " + str(diffx2))
     else:
         continue

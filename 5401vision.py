@@ -29,14 +29,14 @@ cvsink.setSource(picam)
 pipeline = GripPipeline()
 
 # preallocate memory for images so that we don't allocate it every loop
-img = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
+img = np.zeros(shape=(VisionConfig.pi_resolution[1], VisionConfig.pi_resolution[0], 3), dtype=np.uint8)
 
 # set up mjpeg server, the ip for this is 0.0.0.0:1180 and 0.0.0.0:1181
-# Comment this out before competition, or change ports to allowed port numbers
-mjpegServer1 = cscore.MjpegServer("httpserver", 1180)
-mjpegServer1.setSource(picam)
-mjpegServer2 = cscore.MjpegServer("httpserver", 1181)
-mjpegServer2.setSource(usbcam)
+# These are FMX approved port numbers
+mjpegServerPi = cscore.MjpegServer("httpserver", 1180)
+mjpegServerPi.setSource(picam)
+mjpegServerUsb = cscore.MjpegServer("httpserver", 1181)
+mjpegServerUsb.setSource(usbcam)
 
 # initialize the networktable and wait for connection
 cond = threading.Condition()
@@ -83,15 +83,16 @@ while True:
     try:
         diffx1 = blobs[1][0] - blobs[0][0]
     except IndexError:
-        diffx1 = False
+        # if they dont exist, skip loop iteration
         continue
     # get the difference in X values for the 2nd and 3rd blobs if they exist
     try:
-        diffx2 = blobs[2][0] = blobs[1][0]
+        diffx2 = blobs[2][0] - blobs[1][0]
     except IndexError:
+        # if the 3rd blob doesnt exist then continue anyways
         diffx2 = False
         pass
-    # make sure the difference between the blobs is correct for field use
+    # make sure we drive between targets with a bigger difference
     if diffx1 > diffx2:
         # find the center between the two blobs
         blobcenter = diffx1 / 2 + blobs[0][0]
