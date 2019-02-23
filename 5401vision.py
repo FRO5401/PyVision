@@ -5,6 +5,7 @@ import cscore
 from networktables import NetworkTables
 import logging
 import threading
+import itertools
 
 # set logging level
 # this is needed to get NetworkTables information
@@ -73,38 +74,22 @@ while True:
     # Process image through pipeline
     pipeline.process(img)
 
-    # Get all center coordinates for blobs and put them in a list
-    blobs = []
-    for x in range(0, pipeline.find_blobs_output.__len__()):
-        blobs.append(pipeline.find_blobs_output[x].pt)
-    blobs.sort()
+    # Find the difference in X values for every combination of lines, if they are positive and within 1 pixel of error
+    # then continue
+    try:
+        for x, y in itertools.product(range(0, pipeline.filter_lines_0_output.__len__() - 1),
+                                      range(0, pipeline.filter_lines_1_output.__len__() - 1)):
+            diffX1 = pipeline.filter_lines_1_output[y].x1 - pipeline.filter_lines_0_output[x].x1
+            diffX2 = pipeline.filter_lines_1_output[y].x2 - pipeline.filter_lines_0_output[x].x2
+            if abs(diffX2 - diffX1) <= 1 and diffX1 > 0:
+                diffX = (diffX1 + diffX2) / 2
+                xLeft = pipeline.filter_lines_0_output[x].x1
+                break
+    except:
+        # if linex don't exist, skip loop iteration
+        continue
 
-    # get the difference in X values for the 2 first leftmost blobs if they exist
-    try:
-        diffx1 = blobs[1][0] - blobs[0][0]
-    except IndexError:
-        # if they dont exist, skip loop iteration
-        continue
-    # get the difference in X values for the 2nd and 3rd blobs if they exist
-    try:
-        diffx2 = blobs[2][0] - blobs[1][0]
-    except IndexError:
-        # if the 3rd blob doesnt exist then continue anyways
-        diffx2 = False
-        pass
-    # make sure we drive between targets with a bigger difference
-    if diffx1 > diffx2:
-        # find the center between the two blobs
-        blobcenter = diffx1 / 2 + blobs[0][0]
-        # find the distance from the center of the image
-        distance = (img.shape[1] / 2) - blobcenter
-        # put that distance in the NetworkTable
-        table.putnumber("distance", distance)
-    # if the difference isn't correct do this
-    if diffx2 > diffx1:
-        blobcenter = diffx2 / 2 + blobs[0][0]
-        distance = (img.shape[1] / 2) - blobcenter
-        table.putnumber("distance", distance)
-    else:
-        # if no blobs found, keep running
-        continue
+    # Find the center of the target and the distance from the center of the image, then push to NT
+    targetCenter = (diffX / 2) + xLeft
+    distance = (img.shape[1] / 2) - targetCenter
+    table.putnumber("distance", distance)
