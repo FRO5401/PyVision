@@ -13,13 +13,13 @@ class GripPipeline:
         """initializes all values to presets or None if need to be set
         """
 
-        self.__blur_type = BlurType.Box_Blur
-        self.__blur_radius = 4.504504504504505
+        self.__blur_type = BlurType.Gaussian_Blur
+        self.__blur_radius = 1.8018018018018018
 
         self.blur_output = None
 
         self.__hsl_threshold_input = self.blur_output
-        self.__hsl_threshold_hue = [46.94244604316547, 55.908856532521426]
+        self.__hsl_threshold_hue = [85.79136690647482, 98.60068259385666]
         self.__hsl_threshold_saturation = [227.02338129496403, 255.0]
         self.__hsl_threshold_luminance = [135.29676258992808, 169.71615881356345]
 

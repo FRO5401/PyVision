@@ -1,10 +1,10 @@
 # Config Definitions
 
-pi_resolution = (320, 240)
-usb_resolution = (640, 480)
+drive_resolution = (640, 480)
+aim_resolution = (160, 120)
 
-pi_framerate = 30
-usb_framerate = 30
+drive_framerate = 30
+aim_framerate = 30
 
-# roboRIOIP = "10.54.01.2"
-roboRIOIP = "10.2.1.12"
+roboRIOIP = "10.54.01.2"
+#roboRIOIP = "10.2.1.12"

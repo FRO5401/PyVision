@@ -12,32 +12,32 @@ import itertools
 logging.basicConfig(level=logging.DEBUG)
 
 # create the camera objects
-picam = cscore.UsbCamera("picam", 0)
-usbcam = cscore.UsbCamera("usbcam", 1)
+drivecam = cscore.UsbCamera("drivecamcam", 0)
+aimcam = cscore.UsbCamera("aimcam", 1)
 
 
 # set video modes as determined in VisionConfig.py
-picam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.pi_resolution[0],
-                   VisionConfig.pi_resolution[1], VisionConfig.pi_framerate)
-usbcam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.usb_resolution[0],
-                    VisionConfig.usb_resolution[1], VisionConfig.usb_framerate)
+drivecam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.drive_resolution[0],
+                      VisionConfig.drive_resolution[1], VisionConfig.drive_framerate)
+aimcam.setVideoMode(cscore.VideoMode.PixelFormat.kMJPEG, VisionConfig.aim_resolution[0],
+                    VisionConfig.aim_resolution[1], VisionConfig.aim_framerate)
 
 # create a cv sink, which will grab images from the camera
 cvsink = cscore.CvSink("cvsink")
-cvsink.setSource(picam)
+cvsink.setSource(aimcam)
 
 # create Pipeline Object
 pipeline = GripPipeline()
 
 # preallocate memory for images so that we don't allocate it every loop
-img = np.zeros(shape=(VisionConfig.pi_resolution[1], VisionConfig.pi_resolution[0], 3), dtype=np.uint8)
+img = np.zeros(shape=(VisionConfig.aim_resolution[1], VisionConfig.aim_resolution[0], 3), dtype=np.uint8)
 
 # set up mjpeg server, the ip for this is 0.0.0.0:1180 and 0.0.0.0:1181
 # These are FMX approved port numbers
-mjpegServerPi = cscore.MjpegServer("httpserver", 1180)
-mjpegServerPi.setSource(picam)
-mjpegServerUsb = cscore.MjpegServer("httpserver", 1181)
-mjpegServerUsb.setSource(usbcam)
+mjpegServerDrive = cscore.MjpegServer("httpserver", 1181)
+mjpegServerDrive.setSource(drivecam)
+mjpegServerAim = cscore.MjpegServer("httpserver", 1182)
+mjpegServerAim.setSource(aimcam)
 
 # initialize the networktable and wait for connection
 cond = threading.Condition()
@@ -71,12 +71,13 @@ while True:
         # skip the rest of this iteration (no point in processing an image that doesnt exist)
         continue
 
-    # Process image through pipeline
-    pipeline.process(img)
 
-    # Find the difference in X values for every combination of lines, if they are positive and within 1 pixel of error
-    # then continue
     try:
+        # Process image through pipeline
+        pipeline.process(img)
+
+        # Find the difference in X values for every combination of lines, if they are positive and within 1 pixel of error
+        # then continue
         for x, y in itertools.product(range(0, pipeline.filter_lines_0_output.__len__() - 1),
                                       range(0, pipeline.filter_lines_1_output.__len__() - 1)):
             diffX1 = pipeline.filter_lines_1_output[y].x1 - pipeline.filter_lines_0_output[x].x1
@@ -85,11 +86,14 @@ while True:
                 diffX = (diffX1 + diffX2) / 2
                 xLeft = pipeline.filter_lines_0_output[x].x1
                 break
+
+        # Find the center of the target and the distance from the center of the image, then push to NT
+        targetCenter = (diffX / 2) + xLeft
+        centerDistance = (img.shape[1] / 2) - targetCenter
+        table.putNumber("distance", centerDistance)
     except:
-        # if linex don't exist, skip loop iteration
+        # if lines don't exist, skip loop iteration
         continue
 
-    # Find the center of the target and the distance from the center of the image, then push to NT
-    targetCenter = (diffX / 2) + xLeft
-    distance = (img.shape[1] / 2) - targetCenter
-    table.putnumber("distance", distance)
+
+
